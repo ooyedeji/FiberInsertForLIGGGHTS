@@ -1,0 +1,65 @@
+set -e
+
+FLAG='-O2 -ffree-form -fdefault-real-8 -Wall -Wtabs -funroll-loops'
+
+COMP='gfortran'
+ProgramName='particle_pack.exe'
+
+declare arr=(
+"module"
+"check_input_data"
+"get_geometry_options"
+"get_num_particles"
+"particle_positions"
+"read_in"
+"write_output"
+"write_matlab"
+"write_liggghts"
+"main"
+)
+
+cd src
+
+string="$(echo "${1,,}")"
+if [ "x$string" = "xall" ]
+then
+	if [ -d "obj" ]
+	then
+		rm -r obj
+	fi
+elif [ "x$string" != "x" ]
+then
+	echo "$string is an unknown command... stopping"
+	exit 1
+fi
+
+if [ ! -d "obj" ]
+then
+	mkdir obj
+fi
+
+counter=0
+for i in "${arr[@]}"; do
+	if [ "$i.f90" -nt "obj/$i.o" ]
+	then
+		echo " "
+		echo "Compiling $i"
+		counter=$[counter+1]
+		$COMP $FLAG -c -J obj/ $i.f90 -o obj/$i.o
+	fi
+done
+
+if [ $counter -gt 0 ]
+then
+	echo " "
+	if [ $counter -eq 1 ]
+	then
+		echo "$counter file compiled"
+	else
+		echo "$counter files compiled"
+	fi
+	$COMP $FLAG -o $ProgramName obj/*.o
+	mv $ProgramName ../.
+else
+	echo "Everything is up to date"
+fi
